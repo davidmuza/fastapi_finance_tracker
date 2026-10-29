@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from decimal import Decimal
 
+from app.enum import CurrencyEnum
+
 
 class OperationRequest(BaseModel):
     wallet_name: str = Field(max_length=127)
@@ -29,6 +31,7 @@ class OperationRequest(BaseModel):
 class CreateWalletRequest(BaseModel):
     name: str = Field(max_length=127)
     initial_balance: Decimal = 0
+    currency: CurrencyEnum = CurrencyEnum.RUB
     
     # Валидатор для проверки, что баланс не отрицателен
     @field_validator("initial_balance")
@@ -47,6 +50,15 @@ class CreateWalletRequest(BaseModel):
             raise ValueError("Wallet name cannot be empty!")
         
         return value
+
+
+class WalletResponse(BaseModel):
+    id: int
+    name: str
+    balance: float
+    currency: CurrencyEnum
+
+    model_config = ConfigDict(from_attributes=True)
     
     
 class UserRequest(BaseModel):

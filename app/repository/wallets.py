@@ -1,6 +1,7 @@
 from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.enum import CurrencyEnum
 from app.models import Wallet
 
 
@@ -30,8 +31,8 @@ async def get_all_wallets(db: AsyncSession, user_id: int) -> list[Wallet]:
     result = await db.scalars(select(Wallet).filter_by(user_id=user_id))
     return result.all()
 
-async def create_wallet(db: AsyncSession, user_id: int, wallet_name: str, amount: Decimal) -> Wallet:
-    wallet = Wallet(name=wallet_name, balance=amount, user_id=user_id)
+async def create_wallet(db: AsyncSession, user_id: int, wallet_name: str, amount: Decimal, currency: CurrencyEnum) -> Wallet:
+    wallet = Wallet(name=wallet_name, balance=amount, currency=currency, user_id=user_id)
     db.add(wallet)
     await db.flush()
     await db.refresh(wallet)
