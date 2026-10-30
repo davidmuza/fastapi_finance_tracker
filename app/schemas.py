@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from decimal import Decimal
 
@@ -59,8 +60,21 @@ class WalletResponse(BaseModel):
     currency: CurrencyEnum
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OperationResponse(BaseModel):
+    id: int
+    wallet_id: int
+    type: str
+    amount: Decimal
+    currency: CurrencyEnum
+    category: str | None
+    subcategory: str | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
     
-    
+
 class UserRequest(BaseModel):
     login: str = Field(..., max_length=127)
     

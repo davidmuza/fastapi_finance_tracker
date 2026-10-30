@@ -37,3 +37,8 @@ async def create_wallet(db: AsyncSession, user_id: int, wallet_name: str, amount
     await db.flush()
     await db.refresh(wallet)
     return wallet
+
+
+async def get_wallet_by_id(db: AsyncSession, user_id: int, wallet_id: int) -> Wallet | None:
+    result = await db.scalars(select(Wallet).filter_by(id=wallet_id, user_id=user_id))
+    return result.first()

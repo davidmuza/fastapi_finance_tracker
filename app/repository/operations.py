@@ -1,0 +1,47 @@
+from datetime import datetime
+from decimal import Decimal
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.enum import CurrencyEnum
+from app.models import Operation, Wallet
+
+
+async def get_operations_list(
+    db: AsyncSession,
+    wallet_ids: list[int],
+    date_from: datetime | None,
+    date_to: datetime | None,
+) -> list[Operation]:
+    query = await db.scalars(select(Operation).where(Operation.wallet_id.in_(wallet_ids)))
+
+    if date_from:
+        query = query.filter(Operation.created_at >= date_from)
+
+    if date_to:
+        query = query.filter(Operation.created_at <= date_to)
+
+    return query.all()
+
+
+async def create_operation(
+    db: AsyncSession,
+    wallet_id: int,
+    type: str,
+    amount: Decimal,
+    currency: CurrencyEnum,
+    category: str | None = None,
+    subcategory: str | None = None,
+) -> Operation:
+    operation = Operation(
+        wallet_id=wallet_id,
+        type=type,
+        amount=amount,
+        currency=currency,
+        category=category,
+        subcategory=subcategory
+    )
+    db.add(operation)
+    await db.flush()
+    await db.refresh(operation)
+    return operation
+
