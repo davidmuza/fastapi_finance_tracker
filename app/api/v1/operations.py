@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User
-from app.schemas import OperationRequest, OperationResponse
+from app.schemas import OperationRequest, OperationResponse, TransferCreateSchema
 from app.service import operations as operations_service
 from app.dependencies import get_async_db, get_current_user
 
@@ -33,3 +33,12 @@ async def add_expense(operation: OperationRequest,
                       db: AsyncSession = Depends(get_async_db),
                       current_user: User = Depends(get_current_user)) -> OperationResponse:
     return await operations_service.add_expense(db, current_user, operation)
+
+
+@router.post("/operations/transfer", response_model=OperationResponse)
+async def create_transfer(
+    payload: TransferCreateSchema,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user)
+) -> OperationResponse:
+    return await operations_service.transfer_between_wallets(db, current_user.id, payload.from_wallet_id, payload.to_wallet_id, payload.amount)

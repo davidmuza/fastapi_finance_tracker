@@ -66,13 +66,34 @@ class OperationResponse(BaseModel):
     id: int
     wallet_id: int
     type: str
-    amount: Decimal
+    amount: float
     currency: CurrencyEnum
     category: str | None
     subcategory: str | None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class TransferCreateSchema(BaseModel):
+    from_wallet_id: int
+    to_wallet_id: int
+    amount: Decimal
+
+
+    @field_validator("amount")
+    @classmethod
+    def wallets_must_differ(cls, v: int, info) -> int:
+        if "from_wallet_id" in info.data and v == info.data["from_wallet_id"]:
+            raise ValueError("Same wallets ids!")
+        return v
+
+    @field_validator("to_wallet_id")
+    @classmethod
+    def amount_gt_zero(cls, v: Decimal) -> Decimal:
+        if v < 0:
+            raise ValueError("Amount cannot be negative")
+        return v
     
 
 class UserRequest(BaseModel):
