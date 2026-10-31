@@ -1,22 +1,26 @@
+from decimal import Decimal
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.enum import CurrencyEnum
 from app.models import User
-from app.schemas import CreateWalletRequest, WalletResponse
+from app.schemas import CreateWalletRequest, TotalBalance, WalletResponse
 from app.repository import wallets as wallets_repository
+from app.service.exchange_service import get_exchange_rate
 
 
-async def get_balance(db: AsyncSession, current_user: User, wallet_name: str | None = None) -> WalletResponse:
-    if wallet_name is None:
-        wallets = await wallets_repository.get_all_wallets(db, current_user.id)
-        return {"total": sum(float(w.balance) for w in wallets)}
+async def get_total_balance(db: AsyncSession, current_user: User) -> TotalBalance:
+    wallets = await wallets_repository.get_all_wallets(db, current_user.id)
+    total_balance = Decimal(0)
     
-    if not await wallets_repository.is_wallet_exist(db, current_user.id, wallet_name):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Wallet '{wallet_name}' not found.")
-        
-    wallet = await wallets_repository.get_wallet_by_name(db, current_user.id, wallet_name)
-    return WalletResponse.model_validate(wallet)
+    for wallet in wallets:
+        if wallet.currency == CurrencyEnum.RUB:
+            total_balance += wallet.balance
+        else:
+            exchange_rate = await get_exchange_rate(wallet.currency, CurrencyEnum.RUB)
+            total_balance += exchange_rate * wallet.balance
+
+    return TotalBalance(total_balance=total_balance)
 
 
 async def create_wallet(db: AsyncSession, current_user: User, wallet: CreateWalletRequest) -> WalletResponse:
@@ -28,3 +32,8 @@ async def create_wallet(db: AsyncSession, current_user: User, wallet: CreateWall
     await db.commit()
         
     return WalletResponse.model_validate(wallet_db)
+
+
+async def get_wallets(db: AsyncSession, current_user: User) -> list[WalletResponse]:
+    wallets = await wallets_repository.get_all_wallets(db, current_user.id)
+    return wallets
